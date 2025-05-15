@@ -20,7 +20,6 @@ export const clerkWebhook = async (req, res) => {
           name: data.first_name + " " + data.last_name,
           image: data.image_url,
           resume: "",
-          password: "clerk-auth",
         };
         //add db
         await User.create(userData);

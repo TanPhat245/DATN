@@ -5,11 +5,13 @@ import User from "../models/UserModel.js";
 export const clerkWebhook = async (req, res) => {
   try {
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
-    await whook.verify(JSON.stringify(req.body), {
-      svix_id: req.headers["svix-id"],
-      svix_timestamp: req.headers["svix-timestamp"],
-      svix_signature: req.headers["svix-signature"],
-    });
+    const payload = JSON.stringify(req.body);
+    const headers = {
+      "svix-id": req.headers["svix-id"],
+      "svix-timestamp": req.headers["svix-timestamp"],
+      "svix-signature": req.headers["svix-signature"],
+    };
+    whook.verify(payload, headers);
     //body
     const { data, type } = req.body;
     switch (type) {
@@ -42,10 +44,11 @@ export const clerkWebhook = async (req, res) => {
         break;
       }
       default:
+        res.status(204).send();
         break;
     }
   } catch (error) {
     console.log(error.message);
-    res.josn({ success: false, message: "Lỗi Webhook" });
+    res.json({ success: false, message: "Lỗi Webhook" });
   }
 };

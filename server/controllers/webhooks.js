@@ -23,7 +23,7 @@ export const clerkWebhook = async (req, res) => {
         };
         //add db
         await User.create(userData);
-        res.josn({});
+        res.json({});
         break;
       }
       case "user.updated": {

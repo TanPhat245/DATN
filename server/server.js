@@ -28,4 +28,3 @@ Sentry.setupExpressErrorHandler(app);
 app.listen(PORT, () => {
     console.log(`Máy chủ đang chạy ở cổng ${PORT}`);
 });
-//5:05:49

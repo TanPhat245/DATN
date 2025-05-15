@@ -20,7 +20,7 @@ app.get('/', (req,res)=> res.send('API đang chạy'))
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
 });
-app.post('/webhook/', clerkWebhook);
+app.post('/webhooks', clerkWebhook);
 
 //Port
 const PORT = process.env.PORT || 5000;

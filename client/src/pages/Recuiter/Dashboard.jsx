@@ -1,17 +1,54 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Footer from "../../components/Footer";
 import { IoChevronDown, IoChevronUp } from "react-icons/io5";
 import { FaRegUser } from "react-icons/fa";
+import NotificationBell from "../../components/NotificationBell";
+import axios from "axios";
+import { LuPackage } from "react-icons/lu";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isJobOpen, setIsJobOpen] = useState(false);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar toggle
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isapplicationOpen, setIsApplicationOpen] = useState(false);
+  const [isPackageOpen, setIsPackageOpen] = useState(false);
+  const token = localStorage.getItem("companyToken");
+  const [companyInfo, setCompanyInfo] = useState({});
+  const dummyNotifications = [
+    { message: "Bạn có 1 ứng viên mới ứng tuyển", read: false },
+    { message: "Tin tuyển dụng của bạn sắp hết hạn", read: true },
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("companyToken");
+    navigate("/");
+    toast.success("Đăng xuất thành công!");
+  };
+  // Gọi API để lấy thoiong tin công ty
+  //Thêm ở dashboard Gói đăng tin, DashboardHome thì 1 carh hiển thị tên gói tin và còn nhiêu ngày nữa hết hạn
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/recruiter/my-info",
+          {
+            headers: {
+              Authorization: `${token}`,
+            },
+          }
+        );
+        setCompanyInfo(res.data.recruiter);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin công ty:", error);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -33,17 +70,47 @@ const Dashboard = () => {
               alt="logo"
             />
           </div>
+          {/* Điều hướng Dashboard*/}
+          <div className="hidden sm:flex flex-1 justify-center items-center gap-6">
+            <button
+              onClick={() => navigate("/dashboard/manage-jobs")}
+              className="text-base font-semibold text-gray-700 hover:text-blue-600"
+            >
+              Tin đăng
+            </button>
+            <button
+              onClick={() => navigate("/dashboard/view-applications")}
+              className="text-base font-semibold text-gray-700 hover:text-blue-600"
+            >
+              Ứng viên
+            </button>
+            <button
+              onClick={() => navigate("/dashboard/info-company")}
+              className="text-base font-semibold text-gray-700 hover:text-blue-600"
+            >
+              Hồ sơ công ty
+            </button>
+          </div>
+          {/*Thông báo <NotificationBell notifications={dummyNotifications} />*/}
           <div className="flex items-center gap-3">
-            <p className="max-sm:hidden">Xin chào, Tấn Phát</p>
+            <p className="max-sm:hidden">Xin chào</p><b>{companyInfo.companyName}</b>
             <div className="relative group">
-              <img
-                className="w-8 border rounded-full"
-                src={assets.company_icon}
-                alt="avatar"
-              />
+              {companyInfo.logo && (
+                <img
+                  src={`http://localhost:5000/${companyInfo.logo.replace(
+                    /\\/g,
+                    "/"
+                  )}`}
+                  alt="Logo công ty"
+                  className="w-6 h-6 mr-2 rounded-full object-cover"
+                />
+              )}
               <div className="absolute hidden group-hover:block top-0 right-0 z-10 text-black rounded pt-12">
                 <ul className="list-none m-0 p-2 bg-white rounded-md border text-sm">
-                  <li className="py-1 px-3 cursor-pointer whitespace-nowrap hover:text-red-500 rounded">
+                  <li
+                    className="py-1 px-3 cursor-pointer whitespace-nowrap hover:text-red-500 rounded"
+                    onClick={handleLogout}
+                  >
                     Đăng xuất
                   </li>
                   <li className="py-1 px-3 cursor-pointer whitespace-nowrap hover:text-red-500 rounded">
@@ -65,7 +132,10 @@ const Dashboard = () => {
           } sm:translate-x-0`}
         >
           <div className="p-5">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800">
+            <h2
+              onClick={() => navigate("/dashboard")}
+              className="text-xl font-semibold mb-6 text-gray-800 cursor-pointer"
+            >
               Bảng điều khiển
             </h2>
             <ul className="space-y-3">
@@ -95,6 +165,12 @@ const Dashboard = () => {
                         className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
                       >
                         Xem thông tin
+                      </NavLink>
+                      <NavLink
+                        to="/dashboard/verify"
+                        className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
+                      >
+                        Xác minh tài khoản
                       </NavLink>
                     </li>
                   </ul>
@@ -146,11 +222,16 @@ const Dashboard = () => {
                   className="border-2 flex items-center justify-between p-3 rounded-lg hover:bg-green-300 hover:border-green-500 cursor-pointer transition"
                 >
                   <span className="flex items-center text-gray-700">
-                    <img
-                      src={assets.company_icon}
-                      alt="Company"
-                      className="w-5 h-5 mr-2"
-                    />
+                    {companyInfo.logo && (
+                      <img
+                        src={`http://localhost:5000/${companyInfo.logo.replace(
+                          /\\/g,
+                          "/"
+                        )}`}
+                        alt="Logo công ty"
+                        className="w-6 h-6 mr-2 rounded-full object-cover"
+                      />
+                    )}
                     Công ty
                   </span>
                   <span>
@@ -167,7 +248,7 @@ const Dashboard = () => {
                         Hồ sơ công ty
                       </NavLink>
                     </li>
-                      <li>
+                    <li>
                       <NavLink
                         to="/dashboard/add-info-company"
                         className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
@@ -178,6 +259,7 @@ const Dashboard = () => {
                   </ul>
                 )}
               </li>
+
               {/* Quản lý ứng viên */}
               <li>
                 <div
@@ -185,7 +267,7 @@ const Dashboard = () => {
                   className="border-2 flex items-center justify-between p-3 rounded-lg hover:bg-green-300 hover:border-green-500 cursor-pointer transition"
                 >
                   <span className="flex items-center text-gray-700">
-                    <FaRegUser className="w-5 h-5 mr-2"/>
+                    <FaRegUser className="w-5 h-5 mr-2" />
                     Quản lý ứng viên
                   </span>
                   <span>
@@ -205,6 +287,51 @@ const Dashboard = () => {
                   </ul>
                 )}
               </li>
+
+              {/*Dk goi dang tin
+              <li>
+                <div
+                  onClick={() => setIsPackageOpen(!isPackageOpen)}
+                  className="border-2 flex items-center justify-between p-3 rounded-lg hover:bg-green-300 hover:border-green-500 cursor-pointer transition"
+                >
+                  <span className="flex items-center text-gray-700">
+                    <LuPackage className="w-5 h-5 mr-2" />
+                    Quản lý gói tin
+                  </span>
+                  <span>
+                    {isPackageOpen ? <IoChevronDown /> : <IoChevronUp />}
+                  </span>
+                </div>
+                {isPackageOpen && (
+                  <ul className="border ml-6 mt-2 space-y-1 transition-all duration-300">
+                    <li>
+                      <NavLink
+                        to="/dashboard/regis-package"
+                        className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
+                      >
+                        Đăng ký gói tin
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/dashboard/list-package"
+                        className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
+                      >
+                        Thông tin các gói tin
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/dashboard/info-package"
+                        className="block p-2 rounded hover:bg-gray-100 text-sm text-gray-600"
+                      >
+                        Gói đăng tin của bạn
+                      </NavLink>
+                    </li>
+                  </ul>
+                )}
+              </li> */}
+              
             </ul>
           </div>
         </aside>
@@ -218,7 +345,7 @@ const Dashboard = () => {
         )}
 
         {/* Main content */}
-        <main className="flex-1 p-6 bg-gray-50 min-h-screen sm:ml-0">
+        <main className="flex-1 p-6 bg-gray-50 min-h-screen sm:ml-0 mb-16 sm:mb-0">
           <Outlet />
         </main>
       </div>

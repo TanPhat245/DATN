@@ -1,113 +1,253 @@
-import React, { useState } from 'react';
-
+import React, { useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useEffect } from "react";
+import {
+  TextField,
+  Button,
+  Typography,
+  Box,
+  TextareaAutosize,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
 const AddCompany = () => {
+  //State quản lý thông tin công ty
   const [companyInfo, setCompanyInfo] = useState({
-    managerName: '',
-    gender: 'Nam',
-    email: '',
-    companyName: '',
-    phone: '',
-    address: '',
-    description: '',
+    managerName: "",
+    email: "",
+    companyName: "",
+    phone: "",
+    address: "",
+    description: "",
+    website: "",
+    employees: "",
   });
-
+  const [logo, setLogo] = useState(null);
+  const [image, setImage] = useState(null);
+  const [isVerified, setIsVerified] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showResendEmail, setShowResendEmail] = useState(false);
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+  //Logic quản lý thông tin công ty
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCompanyInfo({ ...companyInfo, [name]: value });
   };
+  //Xử lý upload hình
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (name === "logo") setLogo(files[0]);
+    if (name === "image") setImage(files[0]);
+  };
 
-  const handleSubmit = (e) => {
+  //Logic gửi thông tin công ty lên server
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Gửi dữ liệu lên server hoặc xử lý thêm mới ở đây
-    console.log('Dữ liệu công ty mới:', companyInfo);
-    alert('Thêm hồ sơ công ty thành công!');
-    // Reset form (nếu muốn)
-    setCompanyInfo({
-      managerName: '',
-      gender: 'Nam',
-      email: '',
-      companyName: '',
-      phone: '',
-      address: '',
-      description: '',
-    });
+    if (!isVerified) {
+      toast.warning(
+        "Tài khoản chưa xác minh email. Vui lòng kiểm tra hộp thư."
+      );
+      setShowResendEmail(true);
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("phone", companyInfo.phone);
+      formData.append("email", companyInfo.email);
+      formData.append("description", companyInfo.description);
+      formData.append("address", companyInfo.address);
+      formData.append("website", companyInfo.website);
+      formData.append("employees", companyInfo.employees);
+      formData.append("companyName", companyInfo.companyName);
+      formData.append("managerName", companyInfo.managerName);
+      if (logo) formData.append("logo", logo);
+      if (image) formData.append("image", image);
+
+      const token = localStorage.getItem("companyToken");
+      //Api them moi cong ty
+      const response = await axios.post(
+        "http://localhost:5000/api/recruiter/add",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: token,
+          },
+        }
+      );
+
+      toast.success("Thêm hồ sơ công ty thành công!");
+      setTimeout(() => navigate("/dashboard/info-company"), 1500);  
+      setCompanyInfo({
+        managerName: "",
+        email: "",
+        companyName: "",
+        phone: "",
+        address: "",
+        description: "",
+        website: "",
+        employees: "",
+      });
+      setLogo(null);
+      setImage(null);
+    } catch (err) {
+      alert(err?.response?.data?.message || "Lỗi khi thêm công ty");
+    }
+  };
+  //API check nhà tuyenr dụng xác nhận mail chưa và gửi mail.
+  useEffect(() => {
+    const checkVerification = async () => {
+      try {
+        const token = localStorage.getItem("companyToken");
+        const res = await axios.get(
+          "http://localhost:5000/api/company/profile",
+          {
+            headers: { Authorization: token },
+          }
+        );
+        setIsVerified(res.data.verified);
+      } catch (err) {
+        toast.error("Lỗi xác minh tài khoản");
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkVerification();
+  }, []);
+  //Gui mail
+  const handleSendVerifyEmail = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("companyToken");
+      const res = await axios.post(
+        "http://localhost:5000/api/company/send-verification-email",
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      setMessage(res.data.message || "Đã gửi email xác minh.");
+    } catch (error) {
+      console.error("Lỗi gửi email:", error);
+      setMessage(
+        error?.response?.data?.message || "Gửi email xác minh thất bại."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4 bg-white shadow-md rounded-md">
-      <h2 className="text-2xl font-bold text-center text-green-600 mb-4">Thêm hồ sơ công ty</h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          className="w-full border p-2 rounded"
-          type="text"
-          name="managerName"
-          placeholder="Tên người quản lý"
-          value={companyInfo.managerName}
-          onChange={handleChange}
-          required
-        />
-        <select
-          className="w-full border p-2 rounded"
-          name="gender"
-          value={companyInfo.gender}
-          onChange={handleChange}
-        >
-        
-          <option value="Nam">Nam</option>
-          <option value="Nữ">Nữ</option>
-        </select>
-        <input
-          className="w-full border p-2 rounded"
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={companyInfo.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="w-full border p-2 rounded"
-          type="text"
-          name="companyName"
-          placeholder="Tên công ty"
-          value={companyInfo.companyName}
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="w-full border p-2 rounded"
-          type="text"
-          name="phone"
-          placeholder="Số điện thoại"
-          value={companyInfo.phone}
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="w-full border p-2 rounded"
-          type="text"
-          name="address"
-          placeholder="Địa chỉ"
-          value={companyInfo.address}
-          onChange={handleChange}
-        />
-        <textarea
-          className="w-full border p-2 rounded"
-          name="description"
-          placeholder="Mô tả về công ty"
-          rows={3}
-          value={companyInfo.description}
-          onChange={handleChange}
-        />
-        <button
-          type="submit"
-          className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
-        >
-          Thêm công ty
-        </button>
-      </form>
-      <h1>4:55;35</h1>
-    </div>
+    <Box className="max-w-2xl mx-auto mt-10 bg-white shadow-md rounded-md p-6">
+      <Typography variant="h5" className="text-center font-bold mb-6">
+        Thêm Thông Tin Công Ty
+      </Typography>
+
+      {/* THÔNG BÁO XÁC MINH */}
+      {!isVerified ? (
+        <Box className="mb-4 text-center">
+          <Typography className="text-red-600 font-medium mb-2">
+            Tài khoản của bạn chưa xác minh email. Vui lòng kiểm tra hộp thư đến
+            để xác minh.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSendVerifyEmail}
+            disabled={loading}
+          >
+            {loading ? "Đang gửi..." : "Gửi email xác minh"}
+          </Button>
+        </Box>
+      ) : (
+        // FORM THÊM THÔNG TIN CHỈ HIỆN NẾU ĐÃ XÁC MINH
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField
+            label="Tên công ty"
+            name="companyName"
+            value={companyInfo.companyName}
+            onChange={handleChange}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Tên người quản lý"
+            name="managerName"
+            value={companyInfo.managerName}
+            onChange={handleChange}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Số điện thoại"
+            name="phone"
+            value={companyInfo.phone}
+            onChange={handleChange}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            value={companyInfo.email}
+            onChange={handleChange}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Website"
+            name="website"
+            value={companyInfo.website}
+            onChange={handleChange}
+            fullWidth
+          />
+          <TextField
+            label="Quy mô công ty"
+            name="employees"
+            value={companyInfo.employees}
+            onChange={handleChange}
+            fullWidth
+          />
+          <TextField
+            label="Địa chỉ"
+            name="address"
+            value={companyInfo.address}
+            onChange={handleChange}
+            fullWidth
+          />
+          <TextField
+            label="Mô tả công ty"
+            name="description"
+            value={companyInfo.description}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            rows={4}
+          />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Logo công ty
+            </label>
+            <input
+              type="file"
+              name="logo"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </div>
+          <Box className="text-center mt-4">
+            <Button type="submit" variant="contained" color="success">
+              Thêm công ty
+            </Button>
+          </Box>
+        </form>
+      )}
+    </Box>
   );
 };
 

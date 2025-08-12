@@ -1,19 +1,33 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
 
 const JobCardCollect = ({ job }) => {
-    const navigate = useNavigate();
-    
+  const navigate = useNavigate();
+
   return (
-    <div onClick={() => { navigate(`/apply-job/${job._id}`); scrollTo(0, 0); }} navigate className="flex items-start justify-between p-4 bg-white rounded-lg border border-green-600 cursor-pointer hover:shadow-md transition-all">
+    <div
+      onClick={() => {
+        navigate(`/apply-job/${job._id}`);
+        scrollTo(0, 0);
+      }}
+      navigate
+      className="flex items-start justify-between p-4 bg-white rounded-lg border border-green-600 cursor-pointer hover:shadow-md transition-all"
+    >
       {/* Left Section: Logo and Job Details */}
       <div className="flex items-start gap-3">
-        {/* Company Logo */}
-        <img
-          src={job.companyId?.image || "/default-logo.png"}
-          className="w-12 h-12 object-contain rounded"
-        />
+        {/* Logo */}
+        {job.recruiter?.logo && (
+          <img
+            src={`http://localhost:5000/${job.recruiter.logo.replace(
+              /\\/g,
+              "/"
+            )}`}
+            alt="Logo công ty"
+            className="w-6 h-6 mr-2 rounded-full object-cover"
+          />
+        )}
 
         {/* Job Details */}
         <div className="flex flex-col gap-1">
@@ -23,15 +37,24 @@ const JobCardCollect = ({ job }) => {
           </h2>
 
           {/* Company Name */}
-          <p className="text-sm text-gray-600 mb-4">{job.companyId.name}</p>
+          <p className="text-sm text-gray-600 mb-4">
+            {job.recruiter?.companyName}
+          </p>
 
-          {/* Job Metadata (Location, Experience, Type, Posted Time) */}
+          {/* Job */}
           <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-            <span className='bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm'>{job.location}</span>
-            <span className='bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm'>{job.experience}</span>
-            <span className='bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm'>{job.level}</span>
-            <span className='bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm'>{job.type}</span>
-            <span className='bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm'>{job.postedTime}</span>
+            <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm">
+              {job.provinceCode}
+            </span>
+            <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm">
+              {job.experiences}
+            </span>
+            <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm">
+              {job.level}
+            </span>
+            <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium text-sm">
+              {job.time}
+            </span>
           </div>
         </div>
       </div>
@@ -39,8 +62,12 @@ const JobCardCollect = ({ job }) => {
       {/* Right Section: Salary and Favorite Button */}
       <div className="flex flex-col items-end gap-1">
         {/* Salary */}
-        <span className="text-xl mb-7 font-semibold text-green-600">{job.salary} triệu</span>
-
+        <span className="text-xl mb-7 font-semibold text-green-600">
+          {" "}
+          {job.salary?.negotiable
+            ? "Thỏa thuận"
+            : `${job.salary.min} - ${job.salary.max} triệu`}{" "}
+        </span>
         {/* Favorite Button (Heart Icon) */}
         <button className="text-gray-400 hover:text-red-500 transition">
           <svg
@@ -58,10 +85,16 @@ const JobCardCollect = ({ job }) => {
             />
           </svg>
         </button>
+        <p>Ngày đăng: {dayjs(job.createdAt).fromNow()}</p>
+        {/* Hiển thị hạn chót */}
+        {job.deadline && (
+          <div className="text-sm text-red-600 font-medium">
+            Hạn chót: {new Date(job.deadline).toLocaleDateString("vi-VN")}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default JobCardCollect;
-

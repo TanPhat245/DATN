@@ -1,11 +1,9 @@
-import React from 'react'
-
-const Loading = () => {
+const FullPageLoader = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-    <div className="w-20 h-20 border-4 border-gray-300 border-t-blue-400 rounded-full animate-spin"></div>
-  </div>
-  )
-}
+    <div className="fixed inset-0 z-[9999] bg-white bg-opacity-70 flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+};
 
-export default Loading
+export default FullPageLoader;

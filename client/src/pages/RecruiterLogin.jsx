@@ -3,6 +3,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ToggleQuyDinh from "../components/ToggleQuyDinh";
+import { toast } from "react-toastify";
+import {
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Button,
+  Checkbox,
+} from "@mui/material";
 
 const RecruiterLogin = () => {
   const [state, setState] = useState("Login"); // "Login" hoặc "Register"
@@ -25,7 +35,6 @@ const RecruiterLogin = () => {
       .then((response) => setProvinces(response.data))
       .catch((error) => console.error("Error fetching provinces:", error));
   }, []);
-
   // Lấy danh sách quận/huyện khi tỉnh/thành phố thay đổi
   useEffect(() => {
     if (selectedProvince) {
@@ -38,13 +47,82 @@ const RecruiterLogin = () => {
       setDistricts([]);
     }
   }, [selectedProvince]);
+  //Handle đăng ký
+  const handleRegister = async (e) => {
+    e.preventDefault();
 
-  const handleRegister = (e) => {
+    if (password !== rePassword) {
+      toast.warn("Mật khẩu không khớp");
+      return;
+    }
 
-  }
-  const handleLogin = (e) => {
+    if (!agreeTerms) {
+      toast.warn("Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật");
+      return;
+    }
+    //tìm cái tên tỉnh và quận huyện xong lấy name của nó(api có name hẹ hẹ)
+    const selectedProvinceObj = provinces.find(
+      (p) => p.code === Number(selectedProvince)
+    );
+    const selectedDistrictObj = districts.find(
+      (d) => d.code === Number(selectedDistrict)
+    );
 
-  }
+    const provinceName = selectedProvinceObj?.name || "";
+    const districtName = selectedDistrictObj?.name || "";
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/company/register",
+        {
+          fullName,
+          companyName,
+          email,
+          password,
+          provinceCode: provinceName,
+          districtCode: districtName,
+        }
+      );
+
+      const data = response.data;
+
+      if (data.success) {
+        toast.success("Đăng ký thành công!");
+        setState("Login");
+      } else {
+        toast.success(data.message || "Đăng ký thất bại");
+      }
+    } catch (error) {
+      console.error("Đăng ký lỗi:", error);
+      toast.warn("Đã xảy ra lỗi khi đăng ký");
+    }
+  };
+  // Handle đăng nhập
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/company/login",
+        {
+          email,
+          password,
+        }
+      );
+
+      const data = response.data;
+
+      if (data.success) {
+        toast.success("Đăng nhập thành công!");
+        localStorage.setItem("companyToken", data.token);
+        navigate("/dashboard");
+      } else {
+        alert(data.message || "Đăng nhập thất bại");
+      }
+    } catch (error) {
+      console.error("Đăng nhập lỗi:", error);
+      toast.error("Tài khoản hoặc mật khẩu không đúng");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -72,38 +150,51 @@ const RecruiterLogin = () => {
         {/* Đăng nhập */}
         {state === "Login" && (
           <>
-            <button className="w-full bg-blue-500 text-white py-2 rounded-lg mb-4 hover:bg-blue-600 transition">
-              Đăng nhập bằng Google
-            </button>
-            <div className="text-center text-gray-500 mb-4">Hoặc đăng nhập bằng email</div>
+            <div className="text-center mb-7 text-lg font-semibold text-blue-600">
+              Đăng nhập với tư cách nhà tuyển dụng
+            </div>
+
             <form onSubmit={handleLogin}>
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Email</label>
-                <input onChange={(e) => setEmail(e.target.value)}
-                  value={email}
+                <TextField
+                  fullWidth
+                  required
                   type="email"
+                  label="Email"
                   placeholder="Email"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Mật khẩu</label>
-                <input onChange={(e) => setPassword(e.target.value)}
-                  value={password}
+                <TextField
+                  fullWidth
+                  required
                   type="password"
+                  label="Mật khẩu"
                   placeholder="Mật khẩu"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+
               <div className="flex justify-between items-center mb-4">
                 <a href="#" className="text-blue-500 hover:underline">
                   Quên mật khẩu
                 </a>
               </div>
-              <button type="submit" className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="success"
+              >
                 Đăng nhập
-              </button>
+              </Button>
             </form>
+
             <div className="text-center mt-4">
               Chưa có tài khoản?{" "}
               <span
@@ -119,97 +210,124 @@ const RecruiterLogin = () => {
         {/* Đăng ký */}
         {state === "Register" && (
           <>
+            {/* Quy định hoặc điều khoản */}
             <div className="bg-gray-100 p-4 rounded-lg mb-6">
-              <ToggleQuyDinh/>
+              <ToggleQuyDinh />
             </div>
+
             <form onSubmit={handleRegister}>
+              {/* Email */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Email</label>
-                <input
-                  onChange={(e) => setEmail(e.target.value)}
-                  value={email}
+                <TextField
+                  fullWidth
+                  label="Email"
                   type="email"
-                  placeholder="Email"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
+
+              {/* Mật khẩu */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Mật khẩu</label>
-                <input
-                  onChange={(e) => setPassword(e.target.value)}
+                <TextField
+                  fullWidth
+                  label="Mật khẩu"
+                  type="password"
                   value={password}
-                  type="password"
-                  placeholder="Mật khẩu"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
+
+              {/* Nhập lại mật khẩu */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Nhập lại mật khẩu</label>
-                <input
-                  onChange={(e) => setRePassword(e.target.value)}
+                <TextField
+                  fullWidth
+                  label="Nhập lại mật khẩu"
+                  type="password"
                   value={rePassword}
-                  type="password"
-                  placeholder="Nhập lại mật khẩu"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  onChange={(e) => setRePassword(e.target.value)}
+                  required
                 />
               </div>
+
+              {/* Họ và tên */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Họ và tên</label>
-                <input
-                  onChange={(e) => setFullName(e.target.value)}
+                <TextField
+                  fullWidth
+                  label="Họ và tên"
+                  type="text"
                   value={fullName}
-                  type="text"
-                  placeholder="Họ và tên"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
                 />
               </div>
+
+              {/* Công ty */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Công ty</label>
-                <input
-                  onChange={(e) => setCompanyName(e.target.value)}
+                <TextField
+                  fullWidth
+                  label="Công ty"
+                  type="text"
                   value={companyName}
-                  type="text"
-                  placeholder="Tên công ty"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
                 />
               </div>
-              {/* Dropdown chọn tỉnh/thành phố */}
+
+              {/* Địa điểm làm việc */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Địa điểm làm việc</label>
-                <select
-                  value={selectedProvince}
-                  onChange={(e) => setSelectedProvince(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                >
-                  <option value="">Chọn tỉnh/thành phố</option>
-                  {provinces.map((province) => (
-                    <option key={province.code} value={province.code}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
+                <FormControl fullWidth required>
+                  <InputLabel>Tỉnh/Thành phố</InputLabel>
+                  <Select
+                    value={selectedProvince}
+                    onChange={(e) => setSelectedProvince(e.target.value)}
+                    label="Tỉnh/Thành phố"
+                  >
+                    <MenuItem value="">
+                      <em>Chọn tỉnh/thành phố</em>
+                    </MenuItem>
+                    {provinces.map((province) => (
+                      <MenuItem key={province.code} value={province.code}>
+                        {province.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </div>
 
-              {/* Dropdown chọn quận/huyện */}
+              {/* Quận/Huyện */}
               <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Quận/huyện</label>
-                <select
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                  disabled={!selectedProvince}
-                >
-                  <option value="">Chọn quận/huyện</option>
-                  {districts.map((district) => (
-                    <option key={district.code} value={district.code}>
-                      {district.name}
-                    </option>
-                  ))}
-                </select>
+                <FormControl fullWidth required>
+                  <InputLabel>Quận/Huyện</InputLabel>
+                  <Select
+                    value={selectedDistrict}
+                    onChange={(e) => setSelectedDistrict(e.target.value)}
+                    label="Quận/Huyện"
+                    disabled={!selectedProvince}
+                  >
+                    <MenuItem value="">
+                      <em>Chọn quận/huyện</em>
+                    </MenuItem>
+                    {districts.map((district) => (
+                      <MenuItem key={district.code} value={district.code}>
+                        {district.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </div>
 
-              <div className="flex items-center mb-4">
-                <input type="checkbox" id="terms" className="mr-2" required  onChange={(e) => setAgreeTerms(e.target.checked)}/>
+              {/* Điều khoản */}
+              <div className="flex items-start mb-4">
+                <Checkbox
+                  id="terms"
+                  required
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  sx={{ padding: 0, marginRight: 1 }}
+                />
                 <label htmlFor="terms" className="text-sm text-gray-600">
                   Tôi đã đọc và đồng ý với{" "}
                   <a href="#" className="text-blue-500 hover:underline">
@@ -222,9 +340,16 @@ const RecruiterLogin = () => {
                   .
                 </label>
               </div>
-              <button type="submit" className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">
+
+              {/* Nút submit */}
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="success"
+              >
                 Hoàn tất
-              </button>
+              </Button>
             </form>
 
             <div className="text-center mt-4">

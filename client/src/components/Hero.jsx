@@ -1,57 +1,197 @@
-import React, { useContext, useRef } from 'react'
-import { assets } from '../assets/assets'
-import { WebContext } from '../context/WebContext'
-
-
+import React, { useContext, useRef } from "react";
+import { assets } from "../assets/assets";
+import { WebContext } from "../context/WebContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import StatisticsBar from "./StatisticsBar";
+import { useEffect } from "react";
+import { useState } from "react";
+import {
+  Box,
+  TextField,
+  IconButton,
+  InputAdornment,
+  Paper,
+  List,
+  ListItem,
+  Button,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 const Hero = () => {
-
-    {/*Logic tìm kiếm*/}
-    const {setSearchFilter, setIsSearched} = useContext(WebContext)
-    const titleRef = useRef(null)
-    const locationRef = useRef(null)
-    const onSearch = () => {
-        setSearchFilter({
-            title:titleRef.current.value,
-            location:locationRef.current.value
-        })
-        setIsSearched(true)
+  const { setSearchFilter, setIsSearched, setSearchResults } =
+    useContext(WebContext);
+  const titleRef = useRef(null);
+  const locationRef = useRef(null);
+  const navigate = useNavigate();
+  const [jobSuggestions, setJobSuggestions] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  //logic search công việc
+  const onSearch = async () => {
+    const title = titleRef.current.value.trim();
+    const location = locationRef.current.value.trim();
+    const token = localStorage.getItem("userToken");
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/user/search?title=${encodeURIComponent(
+          title
+        )}&provinceCode=${encodeURIComponent(location)}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        const results = data.data || [];
+        setSearchFilter({ title, location });
+        setIsSearched(true);
+        setSearchResults(results);
+        toast.success(`Tìm thấy ${results.length} công việc phù hợp!`);
+        const jobListElement = document.getElementById("job-list");
+        if (jobListElement) {
+          jobListElement.scrollIntoView({ behavior: "smooth" });
+        }
+      } else {
+        toast.error(data.message || "Không tìm thấy công việc phù hợp.");
+      }
+    } catch (err) {
+      toast.error("Lỗi khi tìm kiếm công việc.");
+      console.error("Lỗi khi tìm kiếm công việc:", err);
     }
+  };
+  //Lấy danh sách công việc từ API
+  useEffect(() => {
+    const fetchJobTitles = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/jobs/");
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.jobs)) {
+          const titles = data.jobs.map((job) => job.title);
+          setJobSuggestions(titles);
+        }
+      } catch (err) {
+        console.error("Không thể lấy danh sách job:", err);
+      }
+    };
+
+    fetchJobTitles();
+  }, []);
 
   return (
-    <div className='container 2xl:px-20 mx-auto my-10'>
-        {/* Banner*/}
-        <div className='bg-gradient-to-r from-purple-800 to-purple-950 text-white py-16 text-center mx-2 rounded-xl'>
-            <h2 className='text-2xl md:text-3xl lg:text-4xl font-medium mb-4'>Tìm việc khó, có botCV lo</h2>
-            <p className='mb-8 max-w-xl mx-auto text-sm font-light px-5'>Hãy để botCV đồng hành cùng bạn trên hành trình chinh phục sự nghiệp.</p>
-            <div className='flex items-center justify-between bg-white rounded text-gray-600 max-w-xl pl-4 mx-4 sm:mx-auto'>
-                {/* Phần content tiêu đề + thanh tìm kiếm theo tên jobs*/}
-                <div className='flex items-center'>
-                    <img className='h-4 sm:h-5' src={assets.search_icon} alt="Tìm kiếm" />
-                    <input type="text" placeholder='Vị trí tuyển dụng' className='max-sm:text-sx p-2 rounded outline-none w-full' ref={titleRef}/>
-                </div>
-                {/* thanh tìm kiếm theo địa chỉ */}
-                <div className='flex items-center'>
-                    <img className='h-4 sm:h-5' src={assets.location_icon} alt="Địa điểm" />
-                    <input type="text" placeholder='Địa điểm' className='max-sm:text-sx p-2 rounded outline-none w-full' ref={locationRef}/>
-                </div>
-                <button onClick={onSearch} className='bg-blue-600 px-6 py-2 rounded text-white text-[11px] m-1'>Tìm kiếm</button>
-            </div>
-        </div>
+    <div className="container 2xl:px-20 mx-auto my-10">
+      {/* Banner */}
+      <div className="bg-gradient-to-r from-green-600 to-purple-900 text-white py-16 text-center mx-2 rounded-xl">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-medium mb-4">
+          Tìm việc khó, có{" "}
+          <b className="text-green-400 underline italic">botCV</b> lo
+        </h2>
+        <p className="mb-8 max-w-xl mx-auto text-sm font-light px-5">
+          Hãy để botCV đồng hành cùng bạn trên hành trình chinh phục sự nghiệp.
+        </p>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            backgroundColor: "#fff",
+            borderRadius: 2,
+            color: "text.secondary",
+            maxWidth: "600px",
+            px: 2,
+            py: 1,
+            mx: { xs: 2, sm: "auto" },
+          }}
+        >
+          {/* Vị trí tuyển dụng */}
+          <Box position="relative" flex={1} mr={2}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Vị trí tuyển dụng"
+              inputRef={titleRef}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+              onChange={(e) => {
+                const value = e.target.value;
+                const filtered = jobSuggestions.filter((title) =>
+                  title.toLowerCase().includes(value.toLowerCase())
+                );
+                setFilteredSuggestions(filtered);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-        {/* Logo cac cong ty*/}
-        <div className='border border-gray-300 shadow-md mx-2 mt-5 p-6 rounded-md flex'>
-            <div className='flex justify-center gap-10 lg:gap-16 flex-wrap'>
-                <p className='font-medium'>Công ty</p>
-                <img className='h-6' src={assets.microsoft_logo} alt="" />
-                <img className='h-6' src={assets.walmart_logo} alt="" />
-                <img className='h-6' src={assets.accenture_logo} alt="" />
-                <img className='h-6' src={assets.samsung_logo} alt="" />
-                <img className='h-6' src={assets.amazon_logo} alt="" />
-                <img className='h-6' src={assets.adobe_logo} alt="" />
-            </div>
-        </div>
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <Paper
+                sx={{
+                  position: "absolute",
+                  zIndex: 10,
+                  mt: 0.5,
+                  width: "100%",
+                  maxHeight: 192,
+                  overflowY: "auto",
+                }}
+              >
+                <List dense>
+                  {filteredSuggestions.map((suggestion, index) => (
+                    <ListItem
+                      button
+                      key={index}
+                      onMouseDown={() => {
+                        titleRef.current.value = suggestion;
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      {suggestion}
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            )}
+          </Box>
+
+          {/* Địa điểm */}
+          <Box flex={1} mr={2}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Địa điểm"
+              inputRef={locationRef}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LocationOnIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          {/* Nút Tìm kiếm */}
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            sx={{ fontSize: 11, whiteSpace: "nowrap", px: 3, py: 1 }}
+            onClick={onSearch}
+          >
+            Tìm kiếm
+          </Button>
+        </Box>
+      </div>
+
+      {/* Thống kê */}
+      <StatisticsBar />
     </div>
-  )
-}
+  );
+};
 
-export default Hero
+export default Hero;

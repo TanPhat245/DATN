@@ -4,7 +4,8 @@ import { jobsData } from "../assets/assets";
 export const WebContext = createContext()
 
 export const WebContextProvider = (props) => {
-
+    const [searchResults, setSearchResults] = useState([]);
+    
     const[searchFilter, setSearchFilter] = useState({
         title:'',
         location:''
@@ -27,8 +28,10 @@ export const WebContextProvider = (props) => {
     const value = {
         setSearchFilter, searchFilter,
         isSearched, setIsSearched,
-        job, setJobs
+        job, setJobs,
+        searchResults, setSearchResults,
     }
+    
     return (<WebContext.Provider value={value}>
         {props.children}
     </WebContext.Provider>)

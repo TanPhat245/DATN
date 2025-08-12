@@ -40,7 +40,6 @@ const Footer = () => {
             <FaYoutube className="text-red-600 text-2xl cursor-pointer hover:scale-110 transition" />
             <FaLinkedin className="text-blue-500 text-2xl cursor-pointer hover:scale-110 transition" />
           </div>
-          <img src="https://via.placeholder.com/150x50" alt="Chứng nhận" />
         </div>
       </div>
 
@@ -56,9 +55,11 @@ const Footer = () => {
       {/* Scroll to Top Button */}
       <button
         onClick={scrollToTop}
-        className="fixed bottom-5 right-5 bg-gray-300 hover:bg-gray-400 text-gray-700 p-3 rounded-full shadow-lg transition"
+        className="fixed bottom-5 right-5 bg-black text-white text-xs p-3 rounded-lg shadow-lg transition"
       >
         ⬆
+        <p>Đầu</p>
+        <p>trang</p>
       </button>
     </div>
   );
